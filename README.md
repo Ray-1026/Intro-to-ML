@@ -1,6 +1,6 @@
 # Intro-to-ML
 
-Instructor : 林彥宇
+Instructor : Prof. Yen-Yu Lin
 
 Semester : 2023 Fall
 
