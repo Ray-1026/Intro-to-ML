@@ -28,19 +28,23 @@ class LogisticRegression:
         for i in range(self.iteration):
             pred = self.sigmoid((weights) @ X_prime.T)
 
-            # # momentum
+            # # gradient descent (lr=0.0005, epochs=100000)
+            # grad = (1 / total) * (X_prime.T @ (pred - y))
+            # weights = weights - self.learning_rate * grad
+
+            # # momentum (lr=0.0005 epochs=1500)
             # if i == 0:
             #     grad = self.learning_rate * (1 / total) * (X_prime.T @ (pred - y))
             # else:
             #     grad = 0.9 * grad + self.learning_rate * (1 / total) * (X_prime.T @ (pred - y))
             # weights = weights - grad
 
-            # # adagrad
+            # # adagrad (lr=0.05, epochs=500)
             # grad = (1 / total) * (X_prime.T @ (pred - y))
             # G += grad**2
             # weights = weights - (self.learning_rate / (np.sqrt(G) + 1e-8)) * grad
 
-            # adam
+            # adam (lr=0.05, epochs=100)
             grad = (1 / total) * (X_prime.T @ (pred - y))
             m_t = beta_1 * m_t + (1 - beta_1) * grad
             v_t = beta_2 * v_t + (1 - beta_2) * grad**2
@@ -48,10 +52,10 @@ class LogisticRegression:
             v_t_hat = v_t / (1 - beta_2 ** (i + 1))
             weights -= (self.learning_rate / (np.sqrt(v_t_hat) + 1e-8)) * m_t_hat
 
-            # # cross entropy loss
-            # if (i + 1) % 10 == 0:
-            #     loss = -np.mean(y * np.log(pred) + (1 - y) * np.log(1 - pred))
-            #     print(f"iteration {i + 1}: loss = {loss:.5f}")
+            # cross entropy loss
+            if (i + 1) % (self.iteration // 10) == 0:
+                loss = -np.mean(y * np.log(pred) + (1 - y) * np.log(1 - pred))
+                print(f"epoch {i + 1}: loss = {loss:.5f}")
 
         self.intercept = weights[0]
         self.weights = weights[1:]
@@ -87,6 +91,7 @@ class FLD:
         self.sw = (X0 - self.m0).T @ (X0 - self.m0) + (X1 - self.m1).T @ (X1 - self.m1)
         self.sb = (self.m1 - self.m0).T @ (self.m1 - self.m0)
         self.w = np.linalg.inv(self.sw) @ (self.m1 - self.m0).T
+        self.w = self.w / np.linalg.norm(self.w)
         self.slope = self.w[1, 0] / self.w[0, 0]
         self.m0 = self.m0.squeeze()
         self.m1 = self.m1.squeeze()
@@ -108,22 +113,20 @@ class FLD:
         pred = self.predict(X)
         X0 = X[pred == 0]
         X1 = X[pred == 1]
-        pt = np.linspace(-50, -20, 100)
-        projected = ((X @ self.w) * self.w.squeeze()) / (self.w.T @ self.w)
+        pt = np.linspace(0, 80, 100)
+        intercept = 250
+        u = np.array([0, intercept])
+        projected = u + self.w.T * ((X - u) @ self.w)
 
         plt.scatter(X0[:, 0], X0[:, 1], c="r", label="Class 0", s=8)
         plt.scatter(X1[:, 0], X1[:, 1], c="b", label="Class 1", s=8)
         plt.scatter(projected[(pred == 0), 0], projected[(pred == 0), 1], c="r", s=8)
         plt.scatter(projected[(pred == 1), 0], projected[(pred == 1), 1], c="b", s=8)
-        plt.plot(pt, self.slope * pt, color="green")
-        plt.plot(
-            [X[:, 0], projected[:, 0]],
-            [X[:, 1], projected[:, 1]],
-            color="black",
-            linewidth=0.1,
-            zorder=1,
-        )
-        plt.title(f"Projection Line: m={self.slope:.6f}, b={0}")
+        plt.plot(pt, self.slope * pt + intercept, color="green")
+        plt.plot([X[:, 0], projected[:, 0]], [X[:, 1], projected[:, 1]], color="gray", linewidth=0.5)
+        plt.xlim(-50, 150)
+        plt.ylim(50, 250)
+        plt.title(f"Projection Line: m={self.slope:.6f}, b={intercept}")
         plt.legend()
         plt.show()
 
