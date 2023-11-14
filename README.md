@@ -9,10 +9,10 @@ Python 3.8 or above
 
 ## Homeworks
 
-|     |                                                                       |
-|:---:|:---------------------------------------------------------------------:|
-| HW1 | [Linear Regression](./HW1/README.md)                                  |
-| HW2 | [Logistic Regression & Fisher's Linear Discriminant](./HW2/README.md) |
-| HW3 |                                                                       |
-| HW4 |                                                                       |
-| HW5 |                                                                       |
+|                        |                                                    |
+|:----------------------:|:--------------------------------------------------:|
+| [HW1](./HW1/README.md) | Linear Regression                                  |
+| [HW2](./HW2/README.md) | Logistic Regression & Fisher's Linear Discriminant |
+| HW3                    |                                                    |
+| HW4                    |                                                    |
+| HW5                    |                                                    |
