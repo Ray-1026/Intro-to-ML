@@ -160,5 +160,5 @@ cython_debug/
 #.idea/
 
 Final_Project/data/
-Final_Project/*.csv
-Final_Project/training/*.pth
+Final_Project/training/results/
+Final_Project/training/weights/

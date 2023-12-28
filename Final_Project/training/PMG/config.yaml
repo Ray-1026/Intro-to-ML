@@ -1,0 +1,14 @@
+GPU: 0
+
+backbone: resnet101
+
+train_dir: ../../data/train
+valid_dir: ../../data/validation
+test_dir: ../../data/test
+
+model_weight_path: ../weights/PMG.pth
+submission_path: ../results/submission_PMG.csv
+
+epochs: 20
+batch_size: 12
+lr: 0.001
