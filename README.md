@@ -14,5 +14,4 @@ Python 3.8 or above
 | HW1 | Linear Regression                                  |
 | HW2 | Logistic Regression & Fisher's Linear Discriminant |
 | HW3 | Decision Tree & Adaboost                           |
-| HW4 |                                                    |
-| HW5 |                                                    |
+| HW4 | Support Vector Machine                             |
