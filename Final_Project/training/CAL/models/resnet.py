@@ -264,6 +264,13 @@ class ResNet(nn.Module):
         super(ResNet, self).load_state_dict(model_dict)
 
 
+def resnet34(pretrained=False, num_classes=1000):
+    model = ResNet(BasicBlock, [3, 4, 6, 3], num_classes=num_classes)
+    if pretrained:
+        model.load_state_dict(load_url(model_urls["resnet34"]))
+    return model
+
+
 def resnet50(pretrained=False, num_classes=1000, stride=1):
     model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=num_classes, stride=stride)
     if pretrained:
@@ -273,6 +280,27 @@ def resnet50(pretrained=False, num_classes=1000, stride=1):
 
 def resnet101(pretrained=False, num_classes=1000):
     model = ResNet(Bottleneck, [3, 4, 23, 3], num_classes=num_classes)
+    if pretrained:
+        model.load_state_dict(load_url(model_urls["resnet101"]))
+    return model
+
+
+def resnet34_cbam(pretrained=False, num_classes=1000):
+    model = ResNet(BasicBlock, [3, 4, 6, 3], cbam=True, num_classes=num_classes)
+    if pretrained:
+        model.load_state_dict(load_url(model_urls["resnet34"]))
+    return model
+
+
+def resnet50_cbam(pretrained=False, num_classes=1000):
+    model = ResNet(Bottleneck, [3, 4, 6, 3], cbam=True, num_classes=num_classes)
+    if pretrained:
+        model.load_state_dict(load_url(model_urls["resnet50"]))
+    return model
+
+
+def resnet101_cbam(pretrained=False, num_classes=1000):
+    model = ResNet(Bottleneck, [3, 4, 23, 3], cbam=True, num_classes=num_classes)
     if pretrained:
         model.load_state_dict(load_url(model_urls["resnet101"]))
     return model

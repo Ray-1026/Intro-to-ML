@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from models.resnet import resnet101, resnet50
+from .resnet import *
 
 
 EPSILON = 1e-6
@@ -176,6 +176,17 @@ class WSDAN_CAL(nn.Module):
         elif self.net == "resnet50":
             self.features = resnet50(pretrained=pretrained).get_features()
             self.num_features = 512 * self.features[-1][-1].expansion
+        elif self.net == "resnet101_cbam":
+            self.features = resnet101_cbam(pretrained=pretrained).get_features()
+            self.num_features = 512 * self.features[-1][-1].expansion
+        elif self.net == "resnet50_cbam":
+            self.features = resnet50_cbam(pretrained=pretrained).get_features()
+            self.num_features = 512 * self.features[-1][-1].expansion
+        elif self.net == "resnet34":
+            self.features = resnet34(pretrained=pretrained).get_features()
+            self.num_features = 512 * self.features[-1][-1].expansion
+        else:
+            raise ValueError("Unsupported Net: %s" % self.net)
 
         # Attention Maps
         self.attentions = BasicConv2d(self.num_features, self.M, kernel_size=1)

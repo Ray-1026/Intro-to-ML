@@ -7,7 +7,7 @@ from models.network import WSDAN_CAL, batch_augment
 def inference(cfg, test_set, test_loader, class_dic):
     device = "cuda"
 
-    model = WSDAN_CAL(num_classes=200, M=32, net="resnet101", pretrained=True)
+    model = WSDAN_CAL(num_classes=200, M=32, net=cfg["backbone"], pretrained=True)
     model.to(device)
     model.load_state_dict(torch.load(cfg["model_weight_path"]))
     model.eval()
@@ -67,7 +67,7 @@ def inference(cfg, test_set, test_loader, class_dic):
             ) / 4.0
             y_pred_aux = (y_pred_aux + y_pred_aux_m) / 2.0
 
-            predictions.extend(y_pred_aux.argmax(dim=1).cpu().numpy())
+            predictions.extend(y_pred.argmax(dim=1).cpu().numpy())
 
     predictions = [class_dic[pred] for pred in predictions]
 

@@ -6,19 +6,19 @@ import torch.nn.functional as F
 from tqdm import tqdm
 from torchvision.datasets import ImageFolder
 from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
 
 from models.network import WSDAN_CAL, batch_augment
 from dataset import TestingDataset
 from utils import CenterLoss, adjust_learning, train_tfm, test_tfm
 from inference import inference
 
-import numpy as np
 
 # seed
 myseed = 666
 torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = True
-np.random.seed(myseed)
+torch.backends.cudnn.benchmark = False
+torch.manual_seed(myseed)
 if torch.cuda.is_available():
     torch.cuda.manual_seed(myseed)
     torch.cuda.manual_seed_all(myseed)
@@ -27,12 +27,13 @@ if torch.cuda.is_available():
 # train
 def train(cfg, train_loader, valid_loader, model, criterion, optimizer, epochs=10):
     best_acc = 0.0
+    train_losses, train_accs, valid_losses, valid_accs = [], [], [], []
     feature_center = torch.zeros(200, 32 * model.num_features).cuda()
 
     for epoch in range(epochs):
         model.train()
         train_loss = []
-        train_accs = []
+        train_acc = []
 
         with tqdm(total=len(train_loader), unit="batch") as tqdm_bar:
             tqdm_bar.set_description(f"Epoch {epoch+1:03d}/{epochs}")
@@ -47,7 +48,7 @@ def train(cfg, train_loader, valid_loader, model, criterion, optimizer, epochs=1
                 y_pred_raw, y_pred_aux, feature_matrix, attention_map = model(images)
 
                 feature_center_batch = F.normalize(feature_center[labels], dim=-1)
-                feature_center[labels] += 0.05 * (
+                feature_center[labels] += 0.01 * (
                     feature_matrix.detach() - feature_center_batch
                 )
 
@@ -85,10 +86,10 @@ def train(cfg, train_loader, valid_loader, model, criterion, optimizer, epochs=1
 
                 train_loss.append(batch_loss.item())
                 acc = (y_pred_raw.argmax(dim=1) == labels).float().mean()
-                train_accs.append(acc)
+                train_acc.append(acc)
                 tqdm_bar.set_postfix(
                     loss=f"{sum(train_loss)/len(train_loss):.5f}",
-                    acc=f"{sum(train_accs)/len(train_accs):.5f}",
+                    acc=f"{sum(train_acc)/len(train_acc):.5f}",
                     val_loss=0.0,
                     val_acc=0.0,
                 )
@@ -96,14 +97,19 @@ def train(cfg, train_loader, valid_loader, model, criterion, optimizer, epochs=1
 
             tqdm_bar.set_postfix(
                 loss=f"{sum(train_loss)/len(train_loss):.5f}",
-                acc=f"{sum(train_accs)/len(train_accs):.5f}",
+                acc=f"{sum(train_acc)/len(train_acc):.5f}",
                 val_loss=0.0,
                 val_acc=0.0,
             )
 
+            train_losses.append(sum(train_loss) / len(train_loss))
+            train_accs.append((sum(train_acc) / len(train_acc)).cpu().numpy())
+
+            # print(train_accs)
+
             model.eval()
             valid_loss = []
-            valid_accs = []
+            valid_acc = []
 
             for _, (images, labels) in enumerate(valid_loader):
                 images, labels = images.to(device), labels.to(device)
@@ -127,20 +133,40 @@ def train(cfg, train_loader, valid_loader, model, criterion, optimizer, epochs=1
 
                     valid_loss.append(batch_loss.item())
                     acc = (y_pred.argmax(dim=1) == labels).float().mean()
-                    valid_accs.append(acc)
+                    valid_acc.append(acc)
 
             tqdm_bar.set_postfix(
                 loss=f"{sum(train_loss)/len(train_loss):.5f}",
-                acc=f"{sum(train_accs)/len(train_accs):.5f}",
+                acc=f"{sum(train_acc)/len(train_acc):.5f}",
                 val_loss=f"{sum(valid_loss)/len(valid_loss):.5f}",
-                val_acc=f"{sum(valid_accs)/len(valid_accs):.5f}",
+                val_acc=f"{sum(valid_acc)/len(valid_acc):.5f}",
             )
 
-            if sum(valid_accs) / len(valid_accs) > best_acc:
-                best_acc = sum(valid_accs) / len(valid_accs)
+            valid_losses.append(sum(valid_loss) / len(valid_loss))
+            valid_accs.append((sum(valid_acc) / len(valid_acc)).cpu().numpy())
+
+            if sum(valid_acc) / len(valid_acc) > best_acc:
+                best_acc = sum(valid_acc) / len(valid_acc)
                 torch.save(model.state_dict(), cfg["model_weight_path"])
 
             tqdm_bar.close()
+
+    plot_acc_loss(train_losses, train_accs, valid_losses, valid_accs)
+
+
+def plot_acc_loss(train_loss, train_accs, valid_loss, valid_accs):
+    plt.figure(figsize=(10, 4))
+    plt.subplot(121)
+    plt.title("Loss")
+    plt.plot(train_loss, label="train_loss")
+    plt.plot(valid_loss, label="valid_loss")
+    plt.legend()
+    plt.subplot(122)
+    plt.title("Accuracy")
+    plt.plot(train_accs, label="train_accs")
+    plt.plot(valid_accs, label="valid_accs")
+    plt.legend()
+    plt.savefig("CAL.png")
 
 
 if __name__ == "__main__":

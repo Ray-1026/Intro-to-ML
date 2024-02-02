@@ -10,5 +10,4 @@ model_weight_path: ../weights/PMG.pth
 submission_path: ../results/submission_PMG.csv
 
 epochs: 20
-batch_size: 12
-lr: 0.001
+batch_size: 16

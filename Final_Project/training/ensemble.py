@@ -1,18 +1,18 @@
 import os
-import gdown
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
 from tqdm import tqdm
+from torchvision.datasets import ImageFolder
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
 
-from training.CAL.models.network import WSDAN_CAL, batch_augment
-from training.CAL.dataset import TestingDataset
-from training.CAL.utils import test_tfm as test_tfm_cal
-from training.SIMTrans.models.network import VisionTransformer, CONFIGS
-from training.SIMTrans.utils.data_utils import get_loader
+from CAL.models.network import WSDAN_CAL, batch_augment
+from CAL.dataset import TestingDataset
+from CAL.utils import test_tfm as test_tfm_cal
+from SIMTrans.models.network import VisionTransformer, CONFIGS
+from SIMTrans.utils.data_utils import get_loader
 
 # seed
 myseed = 666
@@ -25,7 +25,6 @@ if torch.cuda.is_available():
     torch.cuda.manual_seed_all(myseed)
 
 
-# ensemble model
 class EnsembleModel(nn.Module):
     def __init__(self):
         super().__init__()
@@ -101,12 +100,11 @@ class EnsembleModel(nn.Module):
         return y_ensemble
 
 
-# inference
 def inference(test_set, test_loader_c, test_loader_t, class_dic):
     device = "cuda"
 
     ensemble = EnsembleModel().to(device)
-    ensemble.load_state_dict(torch.load("weights/weights.pth", map_location="cuda:0"))
+    ensemble.load_state_dict(torch.load("weights/ensemble.pth"))
     ensemble.eval()
 
     predictions = []
@@ -124,43 +122,40 @@ def inference(test_set, test_loader_c, test_loader_t, class_dic):
     predictions = [class_dic[pred] for pred in predictions]
 
     submission = pd.DataFrame({"id": test_set.__getnames__(), "label": predictions})
-    submission.to_csv("results/110550093.csv", index=False)
+    submission.to_csv("ensemble_SIMTrans_CAL.csv", index=False)
 
 
 if __name__ == "__main__":
-    # mkdir if there is no weights and results folder
-    if not os.path.exists("weights"):
-        print("Creating weights folder...")
-        os.mkdir("weights")
-    if not os.path.exists("results"):
-        print("Creating results folder...")
-        os.mkdir("results")
+    # device
+    device = "cuda"
+    # torch.cuda.set_device(0)
 
-    # download the weights
-    url = "https://drive.google.com/uc?id=1brD4-VlACQUFUEThrX67JnQTo6bpuHMu"
-    gdown.download(url, output="weights/weights.pth", quiet=False)
-    print("Downloading the weights is done.")
+    # load weight and save
+    model = EnsembleModel().to(device)
+    model.cal.load_state_dict(torch.load("weights/CAL.pth"))
+    model.sim_trans.load_state_dict(torch.load("weights/SIM-Trans.pth"))
+    torch.save(model.state_dict(), "weights/ensemble.pth")
+    print("weights saved!")
 
     # dataset
-    test_set_c = TestingDataset("data/test", test_tfm_cal)
+    train_set = ImageFolder("../data/train")
+    test_set_c = TestingDataset("../data/test", test_tfm_cal)
 
     print(f"Total testing data: {test_set_c.__len__()}")
 
-    # labels
     class_dic = {}
-    with open("training/classes.txt") as f:
-        for i, line in enumerate(f.readlines()):
-            class_dic[i] = line.strip()
+    for i, class_dir in enumerate(train_set.classes):
+        class_dic[i] = os.path.basename(class_dir)
 
-    # dataloader
     batch_size = 8
+
     test_loader_c = DataLoader(test_set_c, batch_size=batch_size, shuffle=False)
     _, test_loader_t, _ = get_loader(
         {
             "batch_size": batch_size,
-            "train_dir": None,
-            "test_dir": "data/test",
-            "valid_dir": None,
+            "test_dir": "../data/test",
+            "valid_dir": "../data/validation",
+            "train_dir": "../data/train",
         }
     )
 

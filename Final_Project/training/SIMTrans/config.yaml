@@ -1,0 +1,18 @@
+GPU: 0
+
+model: ViT-B_16
+pretrained_dir: pretrained/ViT-B_16.npz
+
+train_dir: ../../data/train
+valid_dir: ../../data/validation
+test_dir: ../../data/test
+
+model_weight_path: ../weights/SIM-Trans.pth
+submission_path: ../results/submission_SIM-Trans.csv
+
+split: overlap
+
+epochs: 15
+batch_size: 8
+lr: 0.03
+warmup_steps: 10
